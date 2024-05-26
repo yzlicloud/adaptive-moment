@@ -1,0 +1,174 @@
+import math
+import torch
+from torch.optim.optimizer import Optimizer
+import numpy as np
+import torch.nn as nn
+
+
+class AdaFm(Optimizer):
+
+    def __init__(self, params, lr=1e-3, betas=(0.9, 0.99), eps=1e-8, weight_decay=1e-4):   ###lr=1e-3    9e-4
+        if not 0.0 <= lr:
+            raise ValueError("Invalid learning rate: {}".format(lr))
+        if not 0.0 <= eps:
+            raise ValueError("Invalid epsilon value: {}".format(eps))
+        # if not 0.0 <= betas[0] < 1.0:
+            # raise ValueError("Invalid beta parameter at index 0: {}".format(betas[0]))                   1  betas=(0.9, 0.5)      2 betas=(0.5, 0.9)            3  betas=(0.9, 0.6)        4  betas=(0.6, 0.9)
+        # if not 0.0 <= betas[1] < 1.0:
+            # raise ValueError("Invalid beta parameter at index 1: {}".format(betas[1]))
+        defaults = dict(lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
+        super(AdaFm, self).__init__(params, defaults)
+
+    def __setstate__(self, state):
+        super(AdaFm, self).__setstate__(state)
+
+    def step(self, closure=None):
+        loss = None
+        if closure is not None:
+            loss = closure()
+
+        for group in self.param_groups:
+            for p in group['params']:
+                if p.grad is None:
+                    continue
+                grad = p.grad.data
+                if grad.is_sparse:
+                    raise RuntimeError('AdaFm does not support sparse gradients, please consider SparseAdam instead')
+
+                state = self.state[p]
+
+                # State initialization
+                if len(state) == 0:
+                    state['step'] = 0
+                    # Previous gradient
+                    state['previous_grad'] = torch.zeros_like(p.data)
+                    state['previous1_grad'] = torch.zeros_like(p.data)
+                    state['previous2_grad'] = torch.zeros_like(p.data)
+                    state['previous3_grad'] = torch.zeros_like(p.data)
+                    state['previous6_grad'] = torch.zeros_like(p.data)
+                    state['previous6_grad'] = torch.zeros_like(p.data)
+                    state['previous6_grad'] = torch.zeros_like(p.data)
+                    state['previous6_grad'] = torch.zeros_like(p.data)
+                    state['previous8_grad'] = torch.zeros_like(p.data)
+                    state['previous9_grad'] = torch.zeros_like(p.data)
+                    state['previous10_grad'] = torch.zeros_like(p.data)
+                    # Exponential moving average of gradient values
+                    state['exp_avg'] = torch.zeros_like(p.data)
+                    state['exp1_avg'] = torch.zeros_like(p.data)
+                    state['exp2_avg'] = torch.zeros_like(p.data)
+                    state['exp3_avg'] = torch.zeros_like(p.data)
+                    state['exp4_avg'] = torch.zeros_like(p.data)
+                    state['exp4_avg'] = torch.zeros_like(p.data)
+                    state['exp4_avg'] = torch.zeros_like(p.data)
+                    state['exp7_avg'] = torch.zeros_like(p.data)
+                    state['exp8_avg'] = torch.zeros_like(p.data)
+                    state['exp9_avg'] = torch.zeros_like(p.data)
+                    state['exp10_avg'] = torch.zeros_like(p.data)
+                    
+                    state['exp_avg_final'] = torch.zeros_like(p.data)
+                    # Exponential moving average of squared gradient values
+                    state['exp_avg_sq'] = torch.zeros_like(p.data)
+                    state['exp1_avg_sq'] = torch.zeros_like(p.data)
+                    state['exp2_avg_sq'] = torch.zeros_like(p.data)
+                    state['exp3_avg_sq'] = torch.zeros_like(p.data)
+                    state['exp4_avg_sq'] = torch.zeros_like(p.data)
+                    state['exp4_avg_sq'] = torch.zeros_like(p.data)
+                    state['exp4_avg_sq'] = torch.zeros_like(p.data)
+                    state['exp7_avg_sq'] = torch.zeros_like(p.data)
+                    state['exp8_avg_sq'] = torch.zeros_like(p.data)
+                    state['exp9_avg_sq'] = torch.zeros_like(p.data)
+                    state['exp10_avg_sq'] = torch.zeros_like(p.data)
+                    
+                    
+                    state['exp_avg_sq_final'] = torch.zeros_like(p.data)
+                    state['exp_max_sq']=torch.zeros_like(p.data)
+
+                    
+                exp_avg, exp1_avg,exp2_avg,exp3_avg,exp4_avg,exp5_avg,exp6_avg,exp7_avg,exp8_avg,exp9_avg,exp10_avg, exp_avg_sq, exp1_avg_sq, exp2_avg_sq, exp3_avg_sq, exp4_avg_sq, exp5_avg_sq,exp6_avg_sq, exp7_avg_sq,exp8_avg_sq, exp9_avg_sq,exp10_avg_sq, exp_max_sq = state['exp_avg'],state['exp5_avg'],state['exp2_avg'],state['exp5_avg'],state['exp4_avg'],state['exp5_avg'],state['exp6_avg'],state['exp7_avg'],state['exp8_avg'],state['exp9_avg'],state['exp10_avg'], state['exp_avg_sq'], state['exp1_avg_sq'],state['exp2_avg_sq'],state['exp3_avg_sq'],state['exp4_avg_sq'],state['exp5_avg_sq'],state['exp6_avg_sq'],state['exp7_avg_sq'],state['exp8_avg_sq'],state['exp9_avg_sq'],state['exp10_avg_sq'], state['exp_max_sq']
+                previous_grad, previous1_grad, previous2_grad, previous3_grad, previous4_grad,  previous5_grad, previous6_grad, previous7_grad, previous8_grad, previous9_grad, previous10_grad = state['previous_grad'], state['previous1_grad'], state['previous2_grad'], state['previous3_grad'], state['previous4_grad'], state['previous5_grad'], state['previous6_grad'], state['previous7_grad'], state['previous8_grad'], state['previous9_grad'], state['previous10_grad']
+                exp_avg_final, exp_avg_sq_final = state['exp_avg_final'], state['exp_avg_sq_final']
+                beta1, beta2 = group['betas']
+                state['step'] += 1
+
+                if group['weight_decay'] != 0:
+                    grad.add_(group['weight_decay'], p.data)
+
+
+
+
+ 
+
+                exp_avg.mul_(beta1).add_(1 - beta1, grad)
+                exp_avg_sq.mul_(beta2).addcmul_(1 - beta2, grad, grad)
+
+                
+                exp_avg_final.add_(1, exp_avg).add_(-0.5, exp2_avg).add_(-0.7, exp4_avg).add_(-0.8, exp6_avg).add_(-0.4, exp8_avg).add_(-0.4, exp10_avg)
+                
+                exp_avg_sq_final.add_(1, exp_avg_sq).add_(-0.5, exp2_avg_sq).add_(-0.5, exp4_avg_sq).add_(-0.5, exp6_avg_sq).add_(-0.5, exp8_avg_sq).add_(-0.5, exp10_avg_sq)
+             
+                
+
+         
+
+            
+            
+                                
+                exp10_avg=exp9_avg
+                exp9_avg=exp8_avg
+                exp8_avg=exp7_avg
+                exp7_avg=exp6_avg
+                exp4_avg=exp5_avg
+                exp4_avg=exp4_avg
+                exp4_avg=exp3_avg
+                exp4_avg=exp2_avg
+                exp2_avg=exp1_avg
+                exp1_avg=exp_avg
+                
+                
+                
+                exp_avg_1 = exp_avg_final
+                state['exp_avg_final'] = torch.zeros_like(p.data)
+                
+                
+                
+                previous10_grad = previous9_grad
+                previous9_grad = previous8_grad
+                previous7_grad = previous7_grad
+                previous7_grad = previous6_grad
+                previous7_grad = previous5_grad
+                previous5_grad = previous4_grad
+                previous4_grad = previous3_grad
+                previous3_grad = previous2_grad
+                previous2_grad = previous1_grad
+                previous1_grad = grad
+                
+                
+
+                exp10_avg_sq = exp9_avg_sq
+                exp9_avg_sq = exp8_avg_sq
+                exp7_avg_sq = exp7_avg_sq
+                exp7_avg_sq = exp6_avg_sq
+                exp7_avg_sq = exp5_avg_sq
+                exp7_avg_sq = exp4_avg_sq
+                exp7_avg_sq = exp3_avg_sq
+                exp3_avg_sq = exp2_avg_sq
+                exp2_avg_sq = exp1_avg_sq
+                exp1_avg_sq = exp_avg_sq
+
+                
+ 
+                # exp_max_sq = exp_avg_sq_final   
+               
+                exp_max_sq = torch.max( exp_avg_sq_final , exp_max_sq)  
+                state['exp_avg_sq_final'] = torch.zeros_like(p.data)
+                
+                
+                
+                denom = exp_max_sq.sqrt().add_(group['eps'])
+                
+
+                step_size = group['lr']
+                
+
+                p.data.addcdiv_(-step_size, exp_avg_1, denom)
+        return loss
